@@ -1,0 +1,734 @@
+/*auditable*/
+CREATE DATABASE IF NOT EXISTS Hotel;
+USE Hotel;
+
+CREATE TABLE sesiones
+(
+	ses_id INT PRIMARY KEY AUTO_INCREMENT,
+    ses_cadena VARCHAR(12) NOT NULL,
+    ses_inicio datetime NOT NULL,
+    ses_ultima_actividad datetime NOT NULL,
+    ses_fin datetime ,
+    ses_ip VARCHAR(15) NOT NULL,
+    ses_so VARCHAR(255),
+    usr_id INT
+);
+
+CREATE TABLE usuarios
+(
+	usr_id INT PRIMARY KEY AUTO_INCREMENT,
+    usr_login VARCHAR(255) NOT NULL,
+    usr_pwd CHAR(32) NOT NULL,
+    usr_fcreacion DATETIME ,
+    ses_id INT
+);
+
+CREATE TABLE permisos
+(
+	perm_id INT PRIMARY KEY AUTO_INCREMENT,
+    perm_permisos CHAR(10) NOT NULL,
+    perm_fcreacion datetime NOT NULL,
+    ses_id INT NOT NULL,
+    rol_id INT NOT NULL
+);
+
+CREATE TABLE roles
+(
+	rol_id INT PRIMARY KEY AUTO_INCREMENT,
+    rol_nombre VARCHAR(255) NOT NULL,
+    ses_id INT NOT NULL
+);
+
+CREATE TABLE roles_usuarios
+(
+	ru_id INT PRIMARY KEY AUTO_INCREMENT,
+    ru_fecha datetime NOT NULL,
+    rol_id INT NOT NULL,
+    usr_id INT NOT NULL,
+    ses_id INT NOT NULL
+);
+
+/*Insercion Auditable*/
+
+INSERT INTO sesiones(ses_cadena , ses_inicio , ses_ultima_actividad , ses_fin , ses_ip , ses_so , usr_id)
+VALUES('qwertyuiop',NOW(),NOW(),null,'127.0.0.1',1 , 1 );
+    
+INSERT INTO usuarios(usr_login , usr_pwd , usr_fcreacion , ses_id)
+VALUES('kikeman','8998',NOW(), 1 ),
+      ('adm_hotel','administrador',NOW(), 1 ),
+      ('mod_hotel','moderador',NOW(), 1 ),
+      ('usr_hotel','usuario',NOW(), 1 );
+    
+INSERT INTO permisos( perm_permisos , perm_fcreacion ,ses_id ,rol_id )
+    VALUES( 'FFF' , NOW() , 1 , 1 ),
+    	  ( 'FF0' , NOW() , 1 , 2 ),
+    	  ( 'F00' , NOW() , 1 , 3 );
+    
+INSERT INTO roles(rol_id ,rol_nombre , ses_id)
+    VALUES( 1 , 'Administrador' , 1 ),
+    	  ( 2 , 'Especializado' , 1 ),
+    	  ( 3 , 'Normal' , 1 );
+    
+INSERT INTO roles_usuarios(ru_id , ru_fecha , rol_id , usr_id , ses_id )
+    VALUES( 1 , NOW() , 1 , 1 , 1 ),
+	  ( 2 , NOW() , 1 , 2 , 1 ),
+	  ( 3 , NOW() , 2 , 3 , 1 ),
+	  ( 4 , NOW() , 3 , 4 , 1 );
+    
+
+/*restricciones Auditable*/
+
+ALTER TABLE usuarios ADD CONSTRAINT chkusr FOREIGN KEY (ses_id) REFERENCES sesiones (ses_id);
+
+ALTER TABLE sesiones ADD CONSTRAINT chkses FOREIGN KEY (usr_id) REFERENCES usuarios (usr_id);
+
+ALTER TABLE roles_usuarios ADD CONSTRAINT chkrolesusr FOREIGN KEY (rol_id) REFERENCES roles (rol_id);
+
+ALTER TABLE roles_usuarios ADD CONSTRAINT chkrolesusr2 FOREIGN KEY (usr_id) REFERENCES usuarios (usr_id);
+
+ALTER TABLE roles_usuarios ADD CONSTRAINT chkrolesusr3 FOREIGN KEY (ses_id) REFERENCES usuarios (ses_id);
+
+ALTER TABLE permisos ADD CONSTRAINT chkpermisosses FOREIGN KEY (ses_id) REFERENCES sesiones(ses_id);
+
+ALTER TABLE permisos ADD CONSTRAINT chkpermisosrol FOREIGN KEY (rol_id) REFERENCES roles(rol_id);
+
+ALTER TABLE roles ADD CONSTRAINT  chkroles FOREIGN KEY (ses_id) REFERENCES sesiones(ses_id);
+
+
+/*Hotel*/
+
+CREATE TABLE hotel
+(
+	ho_codigo INT PRIMARY KEY AUTO_INCREMENT,
+    ho_nombre VARCHAR(255) NOT NULL,
+    ho_direccion VARCHAR(255) NOT NULL,
+    ho_telefono VARCHAR(30) NOT NULL,
+    ses_id INT NOT NULL
+);
+
+CREATE TABLE habitacion
+(
+	hab_codigo INT PRIMARY KEY AUTO_INCREMENT,
+    tip_hab_codigo INT NOT NULL,
+    ho_codigo INT NOT NULL,
+    hab_disponible VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE tipo_habitacion
+(
+	tip_hab_codigo INT PRIMARY KEY AUTO_INCREMENT,
+    tip_hab_descripcion VARCHAR(255) NOT NULL,
+    tip_hab_capacidad INT NOT NULL,
+    tip_hab_precio INT NOT NULL
+);
+
+CREATE TABLE mobiliario 
+(
+	mob_codigo INT PRIMARY KEY AUTO_INCREMENT,
+    mob_precio INT NOT NULL,
+    mob_nombre VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE habitacion_mobiliario
+(
+	hab_codigo INT NOT NULL,
+    mob_codigo INT NOT NULL
+);
+
+CREATE TABLE estancia
+(
+	est_fechallegada datetime NOT NULL,
+    est_fechasalida datetime NOT NULL,
+    hab_codigo INT NOT NULL,
+    cli_id INT NOT NULL,
+	est_total INT
+);
+
+CREATE TABLE cliente
+(
+	cli_id INT PRIMARY KEY AUTO_INCREMENT,
+    cli_nombre VARCHAR(255) NOT NULL,
+    cli_apellido VARCHAR(255) NOT NULL,
+    tip_cli_codigo INT NOT NULL
+);
+
+CREATE TABLE tipo_cliente
+(
+	tip_cli_codigo INT PRIMARY KEY AUTO_INCREMENT,
+    tip_cli_descripcion VARCHAR(255) NOT NULL	
+);
+
+/*restricciones Hotel*/
+
+ALTER TABLE hotel ADD CONSTRAINT chkhotelses FOREIGN KEY (ses_id) REFERENCES sesiones (ses_id);
+
+ALTER TABLE habitacion ADD CONSTRAINT chktiphab FOREIGN KEY (tip_hab_codigo) REFERENCES tipo_habitacion (tip_hab_codigo);
+
+ALTER TABLE habitacion ADD CONSTRAINT chkho FOREIGN KEY (ho_codigo) REFERENCES hotel (ho_codigo);
+
+ALTER TABLE habitacion_mobiliario ADD CONSTRAINT chkhabmob FOREIGN KEY (hab_codigo) REFERENCES habitaciones (hab_codigo);
+
+ALTER TABLE habitacion_mobiliario ADD CONSTRAINT chkhabmob1 FOREIGN KEY (mob_codigo) REFERENCES mobiliario (mob_codigo);
+
+ALTER TABLE estancia ADD CONSTRAINT chkesthab FOREIGN KEY (hab_codigo) REFERENCES habitacion (hab_codigo);
+
+ALTER TABLE estancia ADD CONSTRAINT chkestcli FOREIGN KEY (cli_id) REFERENCES cliente (cli_id);
+
+ALTER TABLE cliente ADD CONSTRAINT chktipcli FOREIGN KEY (tip_cli_codigo) REFERENCES tipo_cliente (tip_cli_codigo);
+
+
+
+/*Insercion Hotel*/
+INSERT INTO hotel( ho_nombre ,ho_direccion , ho_telefono , ses_id)
+    VALUES( 'Don Pancho' , 'BLV. Revolucion' , '7321111' , 1 );
+
+INSERT INTO tipo_habitacion( tip_hab_codigo ,tip_hab_descripcion , tip_hab_capacidad , tip_hab_precio ) 
+VALUES ( 1 ,'personal' , 1 , 800),
+       ( 2 ,'pareja' , 2 , 1000),
+       ( 3 ,'familiar' , 5 , 2000);
+       
+INSERT INTO habitacion(hab_codigo ,tip_hab_codigo,ho_codigo,hab_disponible)
+		VALUES( 1 , 1 , 1 ,'No disponible'),
+        	      ( 2 , 1 , 1 ,'disponible'),
+                      ( 3 , 1 , 1 ,'No disponible'),
+                      ( 4 , 1 , 1 ,'disponible'),
+                     ( 5 , 2 , 1 ,'disponible'),
+              ( 6 , 2 , 1 ,'disponible'),
+              ( 7 , 2 , 1 ,'disponible'),
+              ( 8 , 2 , 1 ,'disponible'),
+              ( 9 , 3 , 1 ,'disponible'),
+              ( 10 , 3 , 1 ,'disponible'),
+              ( 11 , 3 , 1 ,'disponible'),
+              ( 12 , 3 , 1 ,'disponible');
+
+
+INSERT INTO mobiliario(mob_codigo , mob_nombre , mob_precio )VALUES
+    ( 1 ,'Cama', 5000 ),
+    ( 2 ,'Televisio' , 9999),
+    ( 3 ,'Lampara', 1500),
+    ( 4 ,'Refrigerador', 12000),
+    ( 5 ,'plancha' , 2000),
+    ( 6 ,'Caja fuerte' , 4000),
+    ( 7 ,'Cajonera' , 2500);
+    
+INSERT INTO habitacion_mobiliario (hab_codigo , mob_codigo) VALUES
+	( 1 , 1 ),
+    ( 1 , 2 ),
+    ( 1 , 3 ),
+    ( 1 , 3 ),
+    ( 1 , 7 ),
+    ( 2 , 1 ),
+    ( 2 , 2 ),
+    ( 2 , 3 ),
+    ( 2 , 3 ),
+    ( 2 , 7 ),
+    ( 3 , 1 ),
+    ( 3 , 2 ),
+    ( 3 , 3 ),
+    ( 3 , 3 ),
+    ( 3 , 7 ),
+    ( 4 , 1 ),
+    ( 4 , 2 ),
+    ( 4 , 3 ),
+    ( 4 , 3 ),
+    ( 4 , 7 ),
+    ( 5 , 1 ),
+    ( 5 , 2 ),
+    ( 5 , 3 ),
+    ( 5 , 3 ),
+    ( 5 , 4 ),
+    ( 5 , 5 ),
+    ( 5 , 7 ),
+    ( 5 , 7 ),
+    ( 6 , 1 ),
+    ( 6 , 2 ),
+    ( 6 , 3 ),
+    ( 6 , 3 ),
+    ( 6 , 4 ),
+    ( 6 , 5 ),
+    ( 6 , 7 ),
+    ( 6 , 7 ),
+    ( 7 , 1 ),
+    ( 7 , 2 ),
+    ( 7 , 3 ),
+    ( 7 , 3 ),
+    ( 7 , 4 ),
+    ( 7 , 5 ),
+    ( 7 , 7 ),
+    ( 7 , 7 ),
+    ( 8 , 1 ),
+    ( 8 , 2 ),
+    ( 8 , 3 ),
+    ( 8 , 3 ),
+    ( 8 , 4 ),
+    ( 8 , 5 ),
+    ( 8 , 7 ),
+    ( 8 , 7 ),
+    ( 9 , 1 ),
+    ( 9 , 1 ),
+    ( 9 , 2 ),
+    ( 9 , 3 ),
+    ( 9 , 3 ),
+    ( 9 , 4 ),
+    ( 9 , 5 ),
+    ( 9 , 7 ),
+    ( 9 , 7 ),
+    ( 9 , 7 ),
+    ( 10 , 1 ),
+    ( 10 , 1 ),
+    ( 10 , 2 ),
+    ( 10 , 3 ),
+    ( 10 , 3 ),
+    ( 10 , 4 ),
+    ( 10 , 5 ),
+    ( 10 , 7 ),
+    ( 10 , 7 ),
+    ( 10 , 7 ),
+    ( 11 , 1 ),
+    ( 11 , 1 ),
+    ( 11 , 2 ),
+    ( 11 , 3 ),
+    ( 11 , 3 ),
+    ( 11 , 4 ),
+    ( 11 , 5 ),
+    ( 11 , 7 ),
+    ( 11 , 7 ),
+    ( 11 , 7 ),
+    ( 12 , 1 ),
+    ( 12 , 1 ),
+    ( 12 , 2 ),
+    ( 12 , 3 ),
+    ( 12 , 3 ),
+    ( 12 , 4 ),
+    ( 12 , 5 ),
+    ( 12 , 7 ),
+    ( 12 , 7 ),
+    ( 12 , 7 );
+
+INSERT INTO tipo_cliente(tip_cli_codigo , tip_cli_descripcion)VALUES
+	( 1 , 'Primera vez' ),
+    ( 2 , 'Cada año' ),
+    ( 3 , 'Ocasional' ),
+    ( 4 , 'Familiar' ),
+    ( 5 , 'Frecuente' );
+    
+INSERT INTO cliente(cli_id , cli_nombre , cli_apellido , tip_cli_codigo)VALUES
+	(1 , 'Juan' , 'Lira' , 1),
+    (2 , 'Martin' , 'Peres' , 1),
+    (3 , 'Pedro' , 'Palacios' , 1),
+    (4 , 'Ivan' , 'Ochoa' , 1),
+    (5 , 'Mario' , 'Silva' , 5);
+    
+INSERT INTO estancia(est_fechallegada , est_fechasalida ,hab_codigo , cli_id ,est_total )VALUES
+('2019-06-10' , '2019-06-15' , 1 , 1 , 4000 ),
+('2019-06-08' , '2019-06-10' , 3 , 3 , 4000 );
+
+/*Vistas*/
+
+CREATE VIEW vActEstancia AS 
+SELECT cli.cli_nombre , hab.hab_codigo , est.est_fechallegada , est.est_fechasalida , est.est_total  
+FROM cliente AS cli 
+LEFT JOIN estancia AS est ON (cli.cli_id = est.cli_id)
+LEFT JOIN habitacion AS hab ON (est.hab_codigo = hab.hab_codigo)
+WHERE (NOW() BETWEEN est.est_fechallegada AND est.est_fechasalida);
+
+
+
+
+CREATE VIEW vActEst_CboxClientes AS 
+SELECT cli_nombre FROM cliente AS cli
+LEFT JOIN estancia AS est ON (cli.cli_id = est.cli_id) 
+ WHERE NOW() BETWEEN est.est_fechallegada AND est.est_fechasalida;
+
+
+
+
+CREATE VIEW vActhab AS 
+SELECT h.hab_codigo , th.tip_hab_descripcion ,th.tip_hab_capacidad , th.tip_hab_precio , h.hab_disponible FROM habitacion AS h 
+LEFT JOIN tipo_habitacion AS th ON (h.tip_hab_codigo = th.tip_hab_codigo) ORDER BY h.hab_codigo;
+
+
+
+CREATE VIEW vActhab_mob AS 
+SELECT hm.hab_codigo , m.mob_nombre FROM habitacion_mobiliario as hm
+LEFT JOIN mobiliario AS m ON (hm.mob_codigo = m.mob_codigo) ORDER BY hm.hab_codigo;
+
+/*Triggers*/
+
+DELIMITER ;;
+CREATE TRIGGER t_insert_usr
+AFTER INSERT ON usuarios FOR EACH ROW
+BEGIN
+	UPDATE sesiones
+    SET ses_ultima_actividad = NOW()
+    WHERE ses_id = NEW.ses_id;
+END;;
+DELIMITER ;
+
+
+DELIMITER ;;
+CREATE TRIGGER t_update_usr
+AFTER UPDATE ON usuarios FOR EACH ROW
+BEGIN
+	UPDATE sesiones
+    SET ses_ultima_actividad = NOW()
+    WHERE ses_id = OLD.ses_id;
+END;;
+DELIMITER ;
+
+DELIMITER ;;
+CREATE TRIGGER t_delete_usr
+AFTER DELETE ON usuarios FOR EACH ROW
+BEGIN
+	UPDATE sesiones
+    SET ses_ultima_actividad = NOW()
+    WHERE ses_id = OLD.ses_id;
+END;;
+DELIMITER ;
+
+/*funciones*/
+
+
+DELIMITER ©
+CREATE FUNCTION colsultar_precio(tipo_habitacion varchar(255) , dias int )
+RETURNS int 
+	BEGIN
+    	SELECT tip_hab_codigo INTO @idhab FROM tipo_habitacion WHERE (tip_hab_descripcion like tipo_habitacion);        
+        SELECT tip_hab_precio INTO @precio FROM tipo_habitacion WHERE (tip_hab_codigo = @idhab);
+        SET @total = @precio * dias;        
+   RETURN @total;     
+END©
+DELIMITER ;
+
+
+DELIMITER ;;
+CREATE FUNCTION tipo_usuario(usuario varchar(255) , pwd char(35))
+RETURNS varchar(255)
+BEGIN
+SET @rol = NULL;
+IF EXISTS(SELECT * FROM usuarios WHERE (usr_login like usuario)AND (usr_pwd like pwd)) THEN
+	SELECT usr_id INTO @idusr FROM usuarios WHERE (usr_login like usuario)AND (usr_pwd like pwd);     
+    SELECT rol_id INTO @idrol FROM roles_usuarios WHERE usr_id = @idusr;
+    SELECT rol_nombre into @rol FROM roles WHERE rol_id = @idrol;
+END IF;
+RETURN @rol;
+END;;
+DELIMITER ;
+
+DELIMITER ;;
+CREATE FUNCTION usr_id(usuario varchar(255) , pwd char(35))
+RETURNS INT
+BEGIN
+SET @rol = NULL;
+IF EXISTS(SELECT * FROM usuarios WHERE (usr_login like usuario)AND (usr_pwd like pwd)) THEN
+	SELECT usr_id INTO @idusr FROM usuarios WHERE (usr_login like usuario)AND (usr_pwd like pwd);     
+    
+END IF;
+RETURN @idusr;
+END;;
+DELIMITER ;
+
+
+DELIMITER ;;
+CREATE FUNCTION ses_id(cadena varchar(255))
+RETURNS varchar(255)
+BEGIN
+	IF EXISTS(SELECT * 
+    FROM sesiones 
+    WHERE ses_cadena like cadena) THEN
+		SELECT ses_id INTO @idses 
+    	FROM sesiones 
+    	WHERE ses_cadena like cadena;
+    END IF;
+RETURN @idses;
+END;;
+DELIMITER ;
+ 
+DELIMITER ;;
+CREATE FUNCTION dias(fechallegada datetime , fechasalida datetime)
+RETURNS INT
+BEGIN
+	SELECT DATEDIFF(fechasalida,fechallegada) INTO @dias;	
+    RETURN @dias;
+END;;
+DELIMITER ;
+
+DELIMITER ©
+CREATE FUNCTION consultar_precio(tipo_habitacion varchar(255) , dias int )
+RETURNS int 
+	BEGIN
+    	SELECT tip_hab_codigo INTO @idhab FROM tipo_habitacion WHERE (tip_hab_descripcion like tipo_habitacion);        
+        SELECT tip_hab_precio INTO @precio FROM tipo_habitacion WHERE (tip_hab_codigo = @idhab);
+        SET @total = @precio * dias;        
+   RETURN @total;     
+END©
+DELIMITER ; 
+
+/*Procedimientos*/
+
+DELIMITER ©
+CREATE PROCEDURE nueva_sesion(cadena varchar(255) , ip varchar(255) , so varchar(255), usuario varchar(255))
+	BEGIN
+    	SELECT usr_id INTO @idusr FROM usuarios WHERE usr_login LIKE usuario;
+    	INSERT INTO sesiones(ses_cadena,ses_inicio,ses_ultima_actividad,ses_ip,ses_so,usr_id)      
+         VALUES(cadena,NOW(),NOW(), ip , so , @idusr);
+              
+	END©
+    
+CREATE PROCEDURE actualizar_sesion(cadena varchar(255))
+	BEGIN
+    	UPDATE sesiones
+        SET ses_ultima_actividad = NOW()
+        WHERE ses_cadena like cadena;
+              
+	END© 
+CREATE PROCEDURE fin_sesion(cadena varchar(255))
+	BEGIN
+    	UPDATE sesiones
+        SET ses_fin = NOW()
+        WHERE ses_cadena like cadena;
+              
+	END©     
+    
+DELIMITER ;
+
+DELIMITER ©
+CREATE PROCEDURE registrar_usuario(nombre varchar(255) , pwd char(32) , tipo varchar(255) , cadena varchar(255)) 
+BEGIN
+	SELECT rol_id INTO @idrol FROM roles WHERE rol_nombre like tipo;
+	SELECT ses_id INTO @idses FROM sesiones WHERE ses_cadena like cadena;
+    INSERT INTO usuarios(usr_login , usr_pwd , usr_fcreacion , ses_id)VALUES
+    		(nombre , pwd , NOW() , @idses);
+            
+    SELECT usr_id INTO @idusr FROM usuarios WHERE (usr_login like nombre) AND (usr_pwd like pwd);   
+    
+    INSERT INTO roles_usuarios(rol_id , usr_id , ru_fecha , ses_id)VALUES
+    		(@idrol , @idusr , NOW() , @idses);
+END©
+DELIMITER ;
+
+DELIMITER ;;
+CREATE PROCEDURE actualizar_usuario(nombre varchar(255) , pwd char(32), id INT)
+BEGIN
+	DECLARE exit handler for sqlexception
+  	BEGIN
+    		rollback;
+  	END;    
+    START TRANSACTION;    
+    IF EXISTS(SELECT * 
+    FROM usuarios 
+    WHERE usr_id = id) THEN	
+	IF (pwd LIKE 'vacio')  THEN
+     	SELECT usr_pwd INTO @pwd FROM usuarios WHERE (usr_id = id);
+        UPDATE usuarios
+        SET usr_login = nombre , usr_pwd = @pwd
+        WHERE usr_id = id;
+	ELSE 
+		UPDATE usuarios
+        	SET usr_login = nombre , usr_pwd = pwd
+        	WHERE usr_id = id;
+	END IF;
+    ELSE
+    	UPDATE usuarios
+        SET usr_login = null
+        WHERE usr_id = id;       
+    END IF;
+    COMMIT;
+END;;
+DELIMITER ;
+
+
+DELIMITER ;;
+CREATE PROCEDURE eliminar_usuario(id INT)
+BEGIN
+	IF EXISTS(SELECT * 
+    FROM roles_usuarios 
+    WHERE usr_id = id) THEN
+    	DELETE FROM roles_usuarios WHERE usr_id =id;
+    END IF;
+    IF EXISTS(SELECT * 
+    FROM usuarios 
+    WHERE usr_id = id)THEN
+   	 DELETE FROM usuarios WHERE usr_id=id;
+     END IF;
+END;;
+DELIMITER ;
+
+DELIMITER ©
+CREATE PROCEDURE registrar_mobiliario(nombre varchar(255) ,  precio varchar(255)) 
+BEGIN
+    INSERT INTO mobiliario(mob_nombre ,  mob_precio)VALUES
+    		(nombre , precio);
+            
+END©
+DELIMITER ;
+
+DELIMITER ;;
+CREATE PROCEDURE actualizar_mobiliario(nombre varchar(255) , precio INT , codigo int)
+BEGIN
+	DECLARE exit handler for sqlexception
+  	BEGIN
+    		rollback;
+  	END; 
+    START TRANSACTION;    
+    IF EXISTS(SELECT * 
+    FROM mobiliario 
+    WHERE mob_codigo = codigo ) THEN
+		UPDATE mobiliario
+        SET mob_nombre = nombre, mob_precio = precio
+        WHERE mob_codigo = codigo;
+    ELSE
+    	UPDATE mobiliario
+        SET mob_nombre = null
+        WHERE mob_codigo = codigo;
+    END IF;
+    COMMIT;
+END;;
+DELIMITER ;
+
+
+DELIMITER ;;
+CREATE PROCEDURE eliminar_mobiliario(codigo INT)
+BEGIN
+	IF EXISTS(SELECT * 
+    FROM mobiliario 
+    WHERE mob_codigo = codigo) THEN
+    	DELETE FROM habitacion_mobiliario WHERE mob_codigo = codigo;
+		DELETE FROM mobiliario WHERE mob_codigo = codigo;   
+    END IF;
+END;;
+DELIMITER ;
+
+DELIMITER ;;
+CREATE PROCEDURE agregar_habitacion(tipo varchar(255) )
+BEGIN
+	SELECT tip_hab_codigo into @tipoid FROM tipo_habitacion WHERE tip_hab_descripcion like tipo;
+	INSERT INTO habitacion(ho_codigo , tip_hab_codigo) VALUES (1 , @tipoid);
+END;;
+DELIMITER ;
+
+DELIMITER ;;
+CREATE PROCEDURE eliminar_habitacion(codigo INT)
+BEGIN
+	IF EXISTS(SELECT * 
+    FROM habitacion_mobiliario 
+    WHERE hab_codigo = codigo) THEN
+    	DELETE FROM habitacion_mobiliario WHERE hab_codigo = codigo;		   
+ END IF;    
+    IF EXISTS(SELECT * 
+    FROM habitacion 
+    WHERE hab_codigo = codigo) THEN
+    DELETE FROM habitacion WHERE hab_codigo = codigo;
+ END IF;
+END;;
+DELIMITER ;
+
+DELIMITER ;;
+CREATE PROCEDURE agregar_habmob(idhab int , nombremob varchar(255) )
+BEGIN
+	SELECT mob_codigo into @mobid FROM mobiliario WHERE mob_nombre like nombremob ;
+	INSERT INTO habitacion_mobiliario(hab_codigo , mob_codigo) VALUES (idhab , @mobid);
+END;;
+DELIMITER ;
+
+DELIMITER ;;
+CREATE PROCEDURE eliminar_habmob(codigo int , nombremob varchar(255))
+BEGIN
+	SELECT mob_codigo into @mobid FROM mobiliario WHERE mob_nombre like nombremob;
+	IF EXISTS(SELECT * 
+    FROM habitacion_mobiliario 
+    WHERE (hab_codigo = codigo)AND(mob_codigo = @mobid) ) THEN
+    	DELETE FROM habitacion_mobiliario WHERE (hab_codigo = codigo)AND(mob_codigo = @mobid);		   
+ END IF;    
+END;;
+DELIMITER ;
+
+
+DELIMITER ©
+CREATE PROCEDURE registrar_estancia(nombre_cli varchar(255) , apellido_cli varchar(255) ,  dias INT , id_hab INT) 
+BEGIN
+    IF NOT EXISTS (SELECT * FROM cliente WHERE (cli_nombre LIKE nombre_cli)AND(cli_apellido LIKE apellido_cli))THEN
+    
+    INSERT INTO cliente (cli_nombre , cli_apellido , tip_cli_codigo )
+    VALUES(nombre_cli , apellido_cli , 1);
+    END IF;
+    
+    SELECT cli_id INTO @idcli FROM cliente
+    WHERE(cli_nombre LIKE nombre_cli)AND(cli_apellido LIKE apellido_cli);
+     
+    SET @horas = dias*24;
+    SELECT ADDDATE(CURDATE(), INTERVAL @horas DAY_HOUR) INTO @salida;
+
+	SELECT th.tip_hab_descripcion INTO @tipohab FROM tipo_habitacion as th
+    LEFT JOIN habitacion AS h ON (h.tip_hab_codigo = th.tip_hab_codigo)
+    WHERE(h.hab_codigo = id_hab);
+		
+    SELECT consultar_precio(@tipohab , dias) INTO @total;
+
+		
+    INSERT INTO estancia(est_fechallegada , est_fechasalida , cli_id , hab_codigo , est_total)VALUES (NOW(),@salida , @idcli , id_hab,@total);
+    
+    UPDATE habitacion 
+    SET hab_disponible='No disponible'
+    WHERE hab_codigo = id_hab;
+    
+END©
+DELIMITER ;
+
+
+DELIMITER ©
+CREATE PROCEDURE eliminar_estancia(nombre_cli varchar(255) , id_hab INT , fechallegada datetime) 
+BEGIN
+	SELECT cli_id INTO @idcli FROM cliente WHERE cli_nombre LIKE nombre_cli;
+    DELETE FROM estancia
+    WHERE(cli_id = @idcli )AND(hab_codigo = id_hab)AND(est_fechallegada = fechallegada);
+    UPDATE habitacion
+    SET hab_disponible = 'disponible'
+    WHERE hab_codigo = id_hab;
+    
+END©
+DELIMITER ;
+
+
+
+
+DELIMITER ©
+CREATE PROCEDURE actualizar_estancia(nombre_old varchar(255) , id_hab_old INT ,nombre varchar(255) ,  id_hab INT , dias INT) 
+BEGIN
+	DECLARE exit handler for sqlexception
+  	BEGIN
+    		rollback;
+  	END; 
+    START TRANSACTION; 
+	SELECT cli_id INTO @idcliold FROM cliente WHERE cli_nombre LIKE nombre_old;
+    SELECT cli_id INTO @idcli FROM cliente WHERE cli_nombre LIKE nombre;
+    IF EXISTS (SELECT * FROM estancia WHERE (cli_id = @idcliold)AND(hab_codigo = id_hab_old))THEN
+    
+    SELECT th.tip_hab_descripcion INTO @tipohab FROM tipo_habitacion as th
+    LEFT JOIN habitacion AS h ON (h.tip_hab_codigo = th.tip_hab_codigo)
+    WHERE(h.hab_codigo = id_hab);	
+    
+    SELECT consultar_precio(@tipohab , dias) INTO @total;
+    
+    SET @horas = dias*24;
+    SELECT ADDDATE(CURDATE(), INTERVAL @horas DAY_HOUR) INTO @salida;
+    
+    UPDATE estancia
+    SET cli_id = @idcli , hab_codigo = id_hab , est_fechasalida = @salida ,est_total = @total
+    WHERE(cli_id = @idcliold)AND(hab_codigo = id_hab_old);
+   
+   
+     UPDATE habitacion
+   set hab_disponible = 'disponible'
+   WHERE hab_codigo = id_hab_old;
+   
+    UPDATE habitacion
+   set hab_disponible = 'No disponible'
+   WHERE hab_codigo = id_hab;
+ ELSE
+ 	UPDATE habitacion
+    SET hab_disponible = null;
+   END IF;  
+   COMMIT;
+END©
+DELIMITER ;
